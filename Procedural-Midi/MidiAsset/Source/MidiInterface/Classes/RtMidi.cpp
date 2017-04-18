@@ -90,6 +90,10 @@ void RtMidi :: getCompiledApi( std::vector<RtMidi::Api> &apis ) /*throw()*/
 #if defined(__RTMIDI_DUMMY__)
   apis.push_back( RTMIDI_DUMMY );
 #endif
+
+#if defined(__ANDROID_MIDI__)
+    apis.push_back( ANDROID_MIDI );
+#endif
 }
 
 //*********************************************************************//
@@ -121,6 +125,11 @@ void RtMidiIn :: openMidiApi( RtMidi::Api api, const std::string clientName, uns
 #if defined(__RTMIDI_DUMMY__)
   if ( api == RTMIDI_DUMMY )
     rtapi_ = new MidiInDummy( clientName, queueSizeLimit );
+#endif
+
+#if defined(__ANDROID_MIDI__)
+  if ( api == ANDROID_MIDI )
+    rtapi_ = new MidiInAndroid( clientName, queueSizeLimit );
 #endif
 }
 
@@ -190,6 +199,11 @@ void RtMidiOut :: openMidiApi( RtMidi::Api api, const std::string clientName )
 #if defined(__RTMIDI_DUMMY__)
   if ( api == RTMIDI_DUMMY )
     rtapi_ = new MidiOutDummy( clientName );
+#endif
+
+#if defined(__ANDROID_MIDI__)
+  if ( api == ANDROID_MIDI )
+    rtapi_ = new MidiOutAndroid( clientName );
 #endif
 }
 
@@ -2844,3 +2858,125 @@ void MidiOutJack :: sendMessage( std::vector<unsigned char> *message )
 }
 
 #endif  // __UNIX_JACK__
+
+
+
+//*********************************************************************//
+//  API: ANDROID MIDI
+//
+//
+//  *********************************************************************//
+
+#if defined(__ANDROID_MIDI__)
+
+#include "MidiInterfacePrivatePCH.h"
+
+extern void AndroidThunkCpp_startMidi();
+extern void AndroidThunkCpp_stopMidi();
+extern void AndroidThunkCpp_openPort();
+extern int AndroidThunkCpp_getPortCountIn();
+extern FString AndroidThunkCpp_getPortName(int portNumber);
+extern void AndroidThunkCpp_closePort();
+extern int AndroidThunkCpp_getPortCountOut();
+extern void AndroidThunkCpp_sendMessage(std::vector<unsigned char> *message);
+
+//*********************************************************************//
+//  API: MIDI
+//  Class Definitions: MidiInAndroid
+//*********************************************************************//
+
+MidiInAndroid :: MidiInAndroid( const std::string clientName, unsigned int queueSizeLimit ) : MidiInApi( queueSizeLimit )
+{
+  initialize( clientName );
+}
+
+void MidiInAndroid :: initialize( const std::string& clientName )
+{
+  connect();
+}
+
+void MidiInAndroid :: connect()
+{
+}
+
+MidiInAndroid :: ~MidiInAndroid()
+{
+}
+
+void MidiInAndroid :: openPort( unsigned int portNumber, const std::string portName )
+{
+}
+
+void MidiInAndroid :: openVirtualPort( const std::string portName )
+{
+}
+
+unsigned int MidiInAndroid :: getPortCount()
+{
+	return 0;//AndroidThunkCPP_getPortCountIn();
+}
+
+std::string MidiInAndroid :: getPortName( unsigned int portNumber )
+{
+  return "";
+}
+
+void MidiInAndroid :: closePort()
+{
+}
+
+//*********************************************************************//
+//  API: JACK
+//  Class Definitions: MidiOutJack
+//*********************************************************************//
+
+MidiOutAndroid :: MidiOutAndroid( const std::string clientName ) : MidiOutApi()
+{
+}
+
+void MidiOutAndroid :: initialize( const std::string& clientName )
+{
+	
+}
+
+void MidiOutAndroid :: connect()
+{
+
+}
+
+MidiOutAndroid :: ~MidiOutAndroid()
+{
+
+}
+
+void MidiOutAndroid :: openPort( unsigned int portNumber, const std::string portName )
+{
+}
+
+void MidiOutAndroid :: openVirtualPort( const std::string portName )
+{
+}
+
+unsigned int MidiOutAndroid :: getPortCount()
+{
+	return 0;//AndroidThunkCPP_getPortCountOut();
+}
+
+std::string MidiOutAndroid :: getPortName( unsigned int portNumber )
+{
+
+  return "";
+}
+
+void MidiOutAndroid :: closePort()
+{
+
+}
+
+void MidiOutAndroid :: sendMessage( std::vector<unsigned char> *message )
+{
+	//AndroidThunkJava_sendMessage(reinterpret_cast<jbyte*>(message->data, message->size()));
+	//AndroidThunkJava_sendMessage(message);
+}
+
+#endif  // __ANDROID_MIDI__

@@ -68,6 +68,13 @@ public class MidiInterface : ModuleRules
 			{
 				"libasound2.so", "libpthread.so"
 			});
-		}
+		}		else if (Target.Platform == UnrealTargetPlatform.Android)
+        {
+			Definitions.Add("__ANDROID_MIDI__=1");
+			
+            string pluginPath = Utils.MakePathRelativeTo(ModuleDirectory, BuildConfiguration.RelativeEnginePath);
+            AdditionalPropertiesForReceipt.Add(new ReceiptProperty("AndroidPlugin", Path.Combine(pluginPath, "AndroidMIDI_APL.xml")));
+
+        }
     }
 }

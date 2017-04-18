@@ -124,7 +124,9 @@ class RtMidi
     LINUX_ALSA,     /*!< The Advanced Linux Sound Architecture API. */
     UNIX_JACK,      /*!< The JACK Low-Latency MIDI Server API. */
     WINDOWS_MM,     /*!< The Microsoft Multimedia MIDI API. */
-    RTMIDI_DUMMY    /*!< A compilable but non-functional API. */
+    RTMIDI_DUMMY,    /*!< A compilable but non-functional API. */
+	
+	ANDROID_MIDI    /*!< A compilable but non-functional API. */
   };
 
   //! A static function to determine the current RtMidi version.
@@ -756,6 +758,50 @@ class MidiOutDummy: public MidiOutApi
 
  protected:
   void initialize( const std::string& /*clientName*/ ) {}
+};
+
+#endif
+
+
+#if defined(__ANDROID_MIDI__)
+
+class MidiInAndroid: public MidiInApi
+{
+ public:
+  MidiInAndroid( const std::string clientName, unsigned int queueSizeLimit );
+  ~MidiInAndroid( void );
+  RtMidi::Api getCurrentApi( void ) { return RtMidi::ANDROID_MIDI; };
+  void openPort( unsigned int portNumber, const std::string portName );
+  void openVirtualPort( const std::string portName );
+  void closePort( void );
+  unsigned int getPortCount( void );
+  std::string getPortName( unsigned int portNumber );
+
+ protected:
+  std::string _clientName;
+
+  void connect( void );
+  void initialize( const std::string& clientName );
+};
+
+class MidiOutAndroid: public MidiOutApi
+{
+ public:
+  MidiOutAndroid( const std::string clientName );
+  ~MidiOutAndroid( void );
+  RtMidi::Api getCurrentApi( void ) { return RtMidi::ANDROID_MIDI; };
+  void openPort( unsigned int portNumber, const std::string portName );
+  void openVirtualPort( const std::string portName );
+  void closePort( void );
+  unsigned int getPortCount( void );
+  std::string getPortName( unsigned int portNumber );
+  void sendMessage( std::vector<unsigned char> *message );
+
+ protected:
+  std::string _clientName;
+
+  void connect( void );
+  void initialize( const std::string& clientName );
 };
 
 #endif
