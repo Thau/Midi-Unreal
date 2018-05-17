@@ -14,6 +14,14 @@
 
 class FMidiProcessorWorker;
 
+UENUM(BlueprintType)
+enum class ETimingType : uint8
+{
+	RealTime UMETA(DisplayName="Real Time"),
+	GameTime UMETA(DisplayName="Game Time"),
+	DeltaTime UMETA(DisplayName="Delta Time")
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStart, bool, beginning);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStop, bool, finished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEventMidiEvent, struct FMidiEvent, Event, int32, time, int, TrackID);
@@ -89,10 +97,10 @@ public:
 	/**
 	* start MIDI playback
 	* @param background - Plays the MIDI without game affecting
-	* @param UseGameTime - use real time or game time to process MIDI
+	* @param TimingType - Select the type of timing to process MIDI
 	*/
 	UFUNCTION(BlueprintCallable, Category = "MIDI|Processor")
-	void start(bool background = false, bool UseGameTime = false);
+	void start(bool background = false, ETimingType TimingType = ETimingType::RealTime);
 
 	/* stop MIDI playback */
 	UFUNCTION(BlueprintCallable, Category = "MIDI|Processor")
@@ -144,11 +152,12 @@ private:
 
 	// Thread
 	FMidiProcessorWorker* mWorker = NULL;
-	
+
 	/* Get Running in Background */
 	bool InBackground = false;
-	bool isGameTime;
-	
+	ETimingType timingType;
+	float elapsedTime = 0.0f;
+
 	class MidiCallbackMessage
 	{
 	public:

@@ -62,17 +62,24 @@ void UMidiComponent::BeginPlay()
 void UMidiComponent::TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction )
 {
 	Super::TickComponent( DeltaTime, TickType, ThisTickFunction );
+	elapsedTime += DeltaTime;
 
 	if (mProcessor.PlayRate != PlaySpeed)
 		mProcessor.PlayRate = PlaySpeed;
 
 	if (!InBackground) {
 		// update time
-		if (isGameTime) {
-			mProcessor.update(GetWorld()->TimeSeconds * 1000.0f);
-		}
-		else
+		switch(timingType) {
+		case ETimingType::RealTime:
 			mProcessor.update(FPlatformTime::Cycles());
+			break;
+		case ETimingType::GameTime:
+			mProcessor.update(GetWorld()->TimeSeconds * 1000.0f);
+			break;
+		case ETimingType::DeltaTime:
+			mProcessor.update(elapsedTime * 1000.0f);
+			break;
+		}
 	}
 
 	else
@@ -159,7 +166,7 @@ void UMidiComponent::onEvent(MidiEvent* _event, long ms) {
 		_midiEvent.Channel = channelEvent->getChannel() & 0x0F;
 		_midiEvent.Data1 = channelEvent->getValue1() & 0xFF;
 		_midiEvent.Data2 = channelEvent->getValue2() & 0xFF;
-		
+
 		if (SimplifyNote) {
 			// Running Status Event [Improved Midi Performance]
 			if (_event->getType() == ChannelEvent::NOTE_OFF) {
@@ -176,15 +183,15 @@ void UMidiComponent::onEvent(MidiEvent* _event, long ms) {
 	}
 }
 
-void UMidiComponent::onStart(bool fromBeginning) { 
+void UMidiComponent::onStart(bool fromBeginning) {
 	// MultiThread
 	if (InBackground) {
-		mWorker = new FMidiProcessorWorker(&mProcessor, this->isGameTime);
+		mWorker = new FMidiProcessorWorker(&mProcessor, this->timingType);
 	}
 
-	OnStart.Broadcast(fromBeginning); 
+	OnStart.Broadcast(fromBeginning);
 }
-void UMidiComponent::onStop(bool finish) { 
+void UMidiComponent::onStop(bool finish) {
 	// MultiThread
 	if (mWorker) {
 		mWorker->Stop();
@@ -192,25 +199,31 @@ void UMidiComponent::onStop(bool finish) {
 	}
 	mWorker = NULL;
 	mQueue.Empty();
-	
-	OnStop.Broadcast(finish); 
+
+	OnStop.Broadcast(finish);
 }
 
 //-----------------------------------
 
-void UMidiComponent::start(bool background, bool UseGameTime) {
+void UMidiComponent::start(bool background, ETimingType TimingType) {
 	if (!isRunning()) {
 		InBackground = background;
-		this->isGameTime = UseGameTime;
+		this->timingType = TimingType;
 	}
 
-	if(UseGameTime) {
+	switch(TimingType) {
+	case ETimingType::GameTime:
 		mProcessor.start(GetWorld()->TimeSeconds * 1000.0f);
 		mProcessor.milliFunction = NULL;
-	}
-	else {
+		break;
+	case ETimingType::RealTime:
 		mProcessor.start(FPlatformTime::Cycles());
 		mProcessor.milliFunction = FPlatformTime::ToMilliseconds;
+		break;
+	case ETimingType::DeltaTime:
+		mProcessor.start(0.0f);
+		mProcessor.milliFunction = NULL;
+		break;
 	}
 }
 
@@ -282,12 +295,12 @@ float UMidiComponent::GetDuration()
 						break;
 				}
 			}
-			
+
 			bool more = false;
 			for (int i = 0; i < (int)mCurrEvents.size(); i++) {
 				if (mCurrEvents[i] != mCurrEventsEnd[i])
 				{
-					more = true; 
+					more = true;
 					break;
 				}
 			}

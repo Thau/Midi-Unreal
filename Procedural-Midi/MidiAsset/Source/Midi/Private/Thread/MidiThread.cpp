@@ -12,10 +12,10 @@ bool FMidiProcessorWorker::IsFinished() const
 }
 
 //Constructor / Destructor
-FMidiProcessorWorker::FMidiProcessorWorker(MidiProcessor* IN_PC, bool UseGameTime)
+FMidiProcessorWorker::FMidiProcessorWorker(MidiProcessor* IN_PC, ETimingType TimingType)
 	: ThePC(IN_PC)
 {
-	this->isGameTime = UseGameTime;
+	this->timingType = TimingType;
 
 	Thread = FRunnableThread::Create(this, TEXT("FMidiProcessorWorker"), 0, TPri_BelowNormal); //windows default = 8mb for thread, could specify more
 }
@@ -33,21 +33,35 @@ uint32 FMidiProcessorWorker::Run() {
 	if (!world)
 		return 0;
 
-	if(isGameTime) {
+	switch(timingType) {
+	case ETimingType::GameTime:
 		ThePC->setStartClock(world->TimeSeconds * 1000.0f);
 		ThePC->milliFunction = NULL;
-	}
-	else {
+		break;
+	case ETimingType::RealTime:
 		ThePC->setStartClock(FPlatformTime::Cycles());
 		ThePC->milliFunction = FPlatformTime::ToMilliseconds;
+		break;
+	case ETimingType::DeltaTime:
+		ThePC->setStartClock(0.0f);
+		ThePC->milliFunction = NULL;
+		break;
 	}
 
 	while (!IsFinished())
 	{
-		if (isGameTime)
+		switch(timingType) {
+		case ETimingType::GameTime:
 			ThePC->update(world->TimeSeconds * 1000.0f);
-		else
+			break;
+		case ETimingType::RealTime:
 			ThePC->update(FPlatformTime::Cycles());
+			break;
+		case ETimingType::DeltaTime:
+			ThePC->update(0.008f);
+			break;
+		}
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		//prevent thread from using too many resources
 		FPlatformProcess::Sleep(0.008f);

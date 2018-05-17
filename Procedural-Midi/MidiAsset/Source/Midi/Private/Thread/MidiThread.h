@@ -16,7 +16,7 @@ class MIDI_API FMidiProcessorWorker : public FRunnable
 	/** The PC */
 	MidiProcessor* ThePC;
 
-	bool isGameTime;
+	ETimingType timingType;
 
 public:
 
@@ -26,7 +26,7 @@ public:
 	//~~~ Thread Core Functions ~~~
 
 	//Constructor / Destructor
-	FMidiProcessorWorker(MidiProcessor* IN_PC, bool UseGameTime);
+	FMidiProcessorWorker(MidiProcessor* IN_PC, ETimingType TimingType);
 	virtual ~FMidiProcessorWorker();
 
 	// Begin FRunnable interface.
